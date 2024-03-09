@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 )
 
 var Debug = false
@@ -26,6 +27,29 @@ func EnvParse(args any) error {
 		ftype := val.Type().Field(i)
 		fval := val.Field(i)
 		switch fval.Kind() {
+		case reflect.Bool:
+			tag, found := ftype.Tag.Lookup("env")
+			if !found {
+				if Debug {
+					log.Printf("field: %s, no tag", ftype.Name)
+				}
+				break
+			}
+
+
+			eval, found := os.LookupEnv(tag)
+			if !found {
+				if Debug {
+					log.Printf("field: %s, tag: %s: unset", ftype.Name, tag)
+				}
+				break
+			}
+			
+			fval.SetBool(strings.EqualFold(eval, "true"))
+
+			if Debug {
+				log.Printf("field: %s, tag: %s newval %s", ftype.Name, tag, eval)
+			}
 		case reflect.String:
 			tag, found := ftype.Tag.Lookup("env")
 			if !found {
